@@ -1,7 +1,7 @@
 /**
  * get rid of Not proper paired reads
  */
-package main.java.edu.usc.epigenome.uecgatk.bissnp.filters;
+package edu.usc.epigenome.uecgatk.bissnp.filters;
 
 import htsjdk.samtools.SAMRecord;
 

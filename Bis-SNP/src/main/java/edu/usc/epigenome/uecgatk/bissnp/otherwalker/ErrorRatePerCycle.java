@@ -1,4 +1,4 @@
-package main.java.edu.usc.epigenome.uecgatk.bissnp.otherwalker;
+package edu.usc.epigenome.uecgatk.bissnp.otherwalker;
 
 import htsjdk.samtools.SAMReadGroupRecord;
 import org.broadinstitute.gatk.utils.commandline.Argument;

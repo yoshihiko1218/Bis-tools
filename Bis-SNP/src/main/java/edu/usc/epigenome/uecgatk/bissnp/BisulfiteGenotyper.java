@@ -1,4 +1,4 @@
-package main.java.edu.usc.epigenome.uecgatk.bissnp;
+package edu.usc.epigenome.uecgatk.bissnp;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -51,17 +51,17 @@ import htsjdk.variant.vcf.VCFInfoHeaderLine;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.samtools.util.BlockCompressedOutputStream;
 
-import main.java.edu.usc.epigenome.uecgatk.bissnp.writer.FormatWriterBase;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.writer.SortingTcgaVCFWriter;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.writer.TcgaVCFWriter;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.writer.cpgReads;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.writer.cpgReadsWriterImp;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.filters.BisulfiteIncompleteConvReadsFilter;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.filters.NotProperPairedReadFilter;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.filters.InvertedDupsReadFilter;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.filters.MappingQualityFilter;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.filters.BisulfiteFivePrimeConvReadsFilter;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.filters.BisulfiteMismatchReadsFilter;
+import edu.usc.epigenome.uecgatk.bissnp.writer.FormatWriterBase;
+import edu.usc.epigenome.uecgatk.bissnp.writer.SortingTcgaVCFWriter;
+import edu.usc.epigenome.uecgatk.bissnp.writer.TcgaVCFWriter;
+import edu.usc.epigenome.uecgatk.bissnp.writer.cpgReads;
+import edu.usc.epigenome.uecgatk.bissnp.writer.cpgReadsWriterImp;
+import edu.usc.epigenome.uecgatk.bissnp.filters.BisulfiteIncompleteConvReadsFilter;
+import edu.usc.epigenome.uecgatk.bissnp.filters.NotProperPairedReadFilter;
+import edu.usc.epigenome.uecgatk.bissnp.filters.InvertedDupsReadFilter;
+import edu.usc.epigenome.uecgatk.bissnp.filters.MappingQualityFilter;
+import edu.usc.epigenome.uecgatk.bissnp.filters.BisulfiteFivePrimeConvReadsFilter;
+import edu.usc.epigenome.uecgatk.bissnp.filters.BisulfiteMismatchReadsFilter;
 
 
 		/*
@@ -871,14 +871,23 @@ public class BisulfiteGenotyper extends LocusWalker<BisulfiteVariantCallContext,
 				if (!BisSNPUtils.goodBaseInPileupElement(p, BAC, value.ref)) {
 					continue;
 				}
-					boolean readNegStrand = p.getRead().getReadNegativeStrandFlag();
-					char strand = readNegStrand ? '-' : '+';
-				
-				
-					if (p.getRead().getReadPairedFlag() && p.getRead().getSecondOfPairFlag() && !BAC.nonDirectional) {
-						readNegStrand = !readNegStrand;
-
+					// XG-aware per-read strand decision (full XG fix).
+					// XG=CT  →  read informs + strand methylation (readNegStrand=false)
+					// XG=GA  →  read informs - strand methylation (readNegStrand=true)
+					// Missing XG: fall back to SAM flag + nonDirectional pair logic.
+					String __xgTag = p.getRead().getStringAttribute("XG");
+					boolean readNegStrand;
+					if ("CT".equals(__xgTag)) {
+						readNegStrand = false;
+					} else if ("GA".equals(__xgTag)) {
+						readNegStrand = true;
+					} else {
+						readNegStrand = p.getRead().getReadNegativeStrandFlag();
+						if (p.getRead().getReadPairedFlag() && p.getRead().getSecondOfPairFlag() && !BAC.nonDirectional) {
+							readNegStrand = !readNegStrand;
+						}
 					}
+					char strand = readNegStrand ? '-' : '+';
 					
 					
 					if (readNegStrand) {
@@ -991,14 +1000,27 @@ public class BisulfiteGenotyper extends LocusWalker<BisulfiteVariantCallContext,
 				if (!BisSNPUtils.goodBaseInPileupElement(p, BAC, value.ref)) {
 					continue;
 				}
-				char strand = p.getRead().getReadNegativeStrandFlag() ? '-' : '+';
-				
-				
-				
-				
-				
-				boolean negStrand = p.getRead().getReadNegativeStrandFlag();
-				boolean secondStrand = p.getRead().getProperPairFlag() && p.getRead().getSecondOfPairFlag();
+				// XG-aware strand decision for hetSNP per-read emission (Patch 5).
+				// XG=CT  →  +strand frame (negStrand=false); XG=GA  →  -strand frame.
+				// When XG is set, the secondOfPair-driven base-complement flag is
+				// suppressed because the XG already encodes orientation.
+				String __xgTag2 = p.getRead().getStringAttribute("XG");
+				boolean negStrand;
+				if ("CT".equals(__xgTag2)) {
+					negStrand = false;
+				} else if ("GA".equals(__xgTag2)) {
+					negStrand = true;
+				} else {
+					negStrand = p.getRead().getReadNegativeStrandFlag();
+				}
+				char strand = negStrand ? '-' : '+';
+
+				boolean secondStrand;
+				if (__xgTag2 != null) {
+					secondStrand = false;
+				} else {
+					secondStrand = p.getRead().getProperPairFlag() && p.getRead().getSecondOfPairFlag();
+				}
 				byte base = negStrand ? BaseUtils.simpleComplement(p.getBase()) : p.getBase();
 				//if(value.ref.getLocus().getStart() == 10784192 && p.getRead().getReadName().equalsIgnoreCase("HWI-ST550_0181:5:2206:16865:54452")){
 				//	System.err.println((char)base + "\t" + (char)value.ref.getBase() + "\t" + (char)altAllele.getBases()[0] + "\t" + i + "\t" + privateWriter.toString());

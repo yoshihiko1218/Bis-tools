@@ -1,4 +1,4 @@
-package main.java.edu.usc.epigenome.uecgatk.bissnp;
+package edu.usc.epigenome.uecgatk.bissnp;
 
 import java.util.ArrayList;
 import java.util.Map.Entry;
@@ -29,7 +29,7 @@ import org.broadinstitute.gatk.utils.pileup.ReadBackedPileup;
 import org.broadinstitute.gatk.utils.pileup.ReadBackedPileupImpl;
 import org.broadinstitute.gatk.utils.sam.GATKSAMRecord;
 
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BisulfiteEnums.OUTPUT_MODE;
+import edu.usc.epigenome.uecgatk.bissnp.BisulfiteEnums.OUTPUT_MODE;
 
 
 /*

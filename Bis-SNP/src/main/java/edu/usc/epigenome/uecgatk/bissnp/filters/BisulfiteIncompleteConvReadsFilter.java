@@ -1,11 +1,11 @@
 /**
  * 
  */
-package main.java.edu.usc.epigenome.uecgatk.bissnp.filters;
+package edu.usc.epigenome.uecgatk.bissnp.filters;
 
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BaseUtilsMore;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BisSNPUtils;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BisulfiteSAMConstants;
+import edu.usc.epigenome.uecgatk.bissnp.BaseUtilsMore;
+import edu.usc.epigenome.uecgatk.bissnp.BisSNPUtils;
+import edu.usc.epigenome.uecgatk.bissnp.BisulfiteSAMConstants;
 import htsjdk.samtools.SAMRecord;
 
 import org.broadinstitute.gatk.utils.commandline.Argument;
@@ -59,9 +59,17 @@ public class BisulfiteIncompleteConvReadsFilter extends ReadFilter {
 		//	bases = BisSNPUtils.complementArray(bases);
 		//}
 		
-		if(read.getReadPairedFlag() && read.getSecondOfPairFlag())
+		// XG-aware strand decision (full XG fix). XG=CT → +strand, XG=GA → -strand.
+		// Fall back to FLAG-based secondOfPair flip only if XG missing.
+		String __xg = read.getStringAttribute("XG");
+		if ("CT".equals(__xg)) {
+			negativeStrand = false;
+		} else if ("GA".equals(__xg)) {
+			negativeStrand = true;
+		} else if (read.getReadPairedFlag() && read.getSecondOfPairFlag()) {
 			negativeStrand = !negativeStrand;
-		
+		}
+
 		String pattern = patConv;
 		
 		int numberOfPatternInRef = read.getReadUnmappedFlag() ? -1 : 0;

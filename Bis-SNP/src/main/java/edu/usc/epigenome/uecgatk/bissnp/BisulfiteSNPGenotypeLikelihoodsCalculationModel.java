@@ -1,4 +1,4 @@
-package main.java.edu.usc.epigenome.uecgatk.bissnp;
+package edu.usc.epigenome.uecgatk.bissnp;
 
 import java.util.ArrayList;
 import java.util.Map.Entry;
@@ -462,7 +462,19 @@ public class BisulfiteSNPGenotypeLikelihoodsCalculationModel {
 
             for (PileupElement p : pileup) {
                 SAMRecord samRecord = p.getRead();
-                boolean negStrand = samRecord.getReadNegativeStrandFlag();
+                // XG-aware bisulfite-frame decision. For non-directional libraries
+                // (e.g. scNOMe-HiC), XG=CT means the read informs the +strand methylation
+                // frame regardless of BAM is_reverse; XG=GA → -strand frame. Without XG,
+                // fall back to the SAM flag plus the secondOfPair flip.
+                String xg = samRecord.getStringAttribute("XG");
+                boolean negStrand;
+                if ("CT".equals(xg)) {
+                    negStrand = false;
+                } else if ("GA".equals(xg)) {
+                    negStrand = true;
+                } else {
+                    negStrand = samRecord.getReadNegativeStrandFlag();
+                }
 
                 int offset = p.getOffset();
                 if (offset < 0)// is deletion
@@ -476,7 +488,7 @@ public class BisulfiteSNPGenotypeLikelihoodsCalculationModel {
                 //}
 
 
-                if (paired && samRecord.getSecondOfPairFlag() && !BAC.nonDirectional) {
+                if (xg == null && paired && samRecord.getSecondOfPairFlag() && !BAC.nonDirectional) {
 
                     negStrand = !negStrand;
                 }
@@ -724,7 +736,16 @@ public class BisulfiteSNPGenotypeLikelihoodsCalculationModel {
         int numAPosStrand = 0;
         for (PileupElement p : pileup) {
             SAMRecord samRecord = p.getRead();
-            boolean negStrand = samRecord.getReadNegativeStrandFlag();
+            // XG-aware bisulfite-frame decision (see getLikelihoods above).
+            String xg = samRecord.getStringAttribute("XG");
+            boolean negStrand;
+            if ("CT".equals(xg)) {
+                negStrand = false;
+            } else if ("GA".equals(xg)) {
+                negStrand = true;
+            } else {
+                negStrand = samRecord.getReadNegativeStrandFlag();
+            }
 
 
             int offset = p.getOffset();
@@ -738,7 +759,7 @@ public class BisulfiteSNPGenotypeLikelihoodsCalculationModel {
             //	}
 
 
-            if (paired && samRecord.getSecondOfPairFlag() && !BAC.nonDirectional) {
+            if (xg == null && paired && samRecord.getSecondOfPairFlag() && !BAC.nonDirectional) {
 
                 negStrand = !negStrand;
             }

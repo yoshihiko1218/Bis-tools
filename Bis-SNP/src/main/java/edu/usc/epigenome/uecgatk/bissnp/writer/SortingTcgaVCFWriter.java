@@ -1,4 +1,4 @@
-package main.java.edu.usc.epigenome.uecgatk.bissnp.writer;
+package edu.usc.epigenome.uecgatk.bissnp.writer;
 
 import htsjdk.variant.variantcontext.VariantContext;
 

@@ -1,4 +1,4 @@
-package main.java.edu.usc.epigenome.uecgatk.bissnp;
+package edu.usc.epigenome.uecgatk.bissnp;
 
 import java.util.BitSet;
 
@@ -11,7 +11,7 @@ import org.broadinstitute.gatk.utils.BaseUtils;
 import org.broadinstitute.gatk.utils.exceptions.ReviewedGATKException;
 import org.broadinstitute.gatk.utils.sam.AlignmentUtils.MismatchCount;
 
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BisulfiteEnums.MethylSNPModel;
+import edu.usc.epigenome.uecgatk.bissnp.BisulfiteEnums.MethylSNPModel;
 
 /*
  * Bis-SNP/BisSNP: It is a genotyping and methylation calling in bisulfite treated massively

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package main.java.edu.usc.epigenome.uecgatk.bissnp.vcfpostprocess;
+package edu.usc.epigenome.uecgatk.bissnp.vcfpostprocess;
 
 import java.io.PrintStream;
 import java.util.HashMap;

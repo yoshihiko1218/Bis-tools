@@ -3,14 +3,14 @@
  * quickly check the cytosine context methylation level provided, e.g. use the genome wide CG_methylation_sum/ CG_number, CG is determined by reference genome
  * also, check output the methylation value along the sequence cycle: 2nd end in paired end is -, while 1st end or single end is always + coordinate
  */
-package main.java.edu.usc.epigenome.uecgatk.bissnp.otherwalker;
+package edu.usc.epigenome.uecgatk.bissnp.otherwalker;
 
 import java.io.PrintStream;
 import java.util.TreeMap;
 
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BaseUtilsMore;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.filters.InvertedDupsReadFilter;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.filters.NotProperPairedReadFilter;
+import edu.usc.epigenome.uecgatk.bissnp.BaseUtilsMore;
+import edu.usc.epigenome.uecgatk.bissnp.filters.InvertedDupsReadFilter;
+import edu.usc.epigenome.uecgatk.bissnp.filters.NotProperPairedReadFilter;
 import org.broadinstitute.gatk.utils.commandline.Argument;
 import org.broadinstitute.gatk.utils.commandline.Input;
 import org.broadinstitute.gatk.utils.commandline.Output;
@@ -35,7 +35,7 @@ import org.broadinstitute.gatk.utils.GenomeLoc;
 import org.broadinstitute.gatk.utils.collections.Pair;
 import org.broadinstitute.gatk.utils.sam.GATKSAMRecord;
 
-import main.java.edu.usc.epigenome.uecgatk.bissnp.filters.BisulfiteMismatchReadsFilter;
+import edu.usc.epigenome.uecgatk.bissnp.filters.BisulfiteMismatchReadsFilter;
 
 /**
  * @author yaping

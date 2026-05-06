@@ -1,7 +1,7 @@
 /**
  * 
  */
-package main.java.edu.usc.epigenome.uecgatk.bissnp.otherwalker;
+package edu.usc.epigenome.uecgatk.bissnp.otherwalker;
 
 import java.io.File;
 
@@ -23,8 +23,8 @@ import org.broadinstitute.gatk.engine.walkers.Reference;
 import org.broadinstitute.gatk.engine.walkers.TreeReducible;
 import org.broadinstitute.gatk.engine.walkers.Window;
 
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BisulfiteArgumentCollection;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.DownsamplingBAM;
+import edu.usc.epigenome.uecgatk.bissnp.BisulfiteArgumentCollection;
+import edu.usc.epigenome.uecgatk.bissnp.DownsamplingBAM;
 
 /**
  * @author yaping
