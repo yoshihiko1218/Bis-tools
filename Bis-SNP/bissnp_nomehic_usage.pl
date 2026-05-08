@@ -13,8 +13,8 @@
 ##   <prefix>.GCH.txt                       per-read GCH methylation status
 ##   <prefix>.HCG.txt                       per-read HCG methylation status
 ##   <prefix>.cyt.filtered.sort.vcf         filtered + sorted cytosine VCF
-##   <prefix>.cyt.filtered.sort.GCH.bed     per-base GCH methylation BED (per strand)
-##   <prefix>.cyt.filtered.sort.HCG.bed     per-base HCG methylation BED (per strand)
+##   <prefix>.cyt.filtered.sort.GCH.6plus2.bed   per-base GCH methylation BED (strands combined)
+##   <prefix>.cyt.filtered.sort.HCG.6plus2.bed   per-base HCG methylation BED (strands combined)
 ##   (and GCG / HCH BEDs if --allC)
 
 use strict;
@@ -214,10 +214,15 @@ sub step_filter {
 }
 
 sub step_to_bed {
+    # NOTE: upstream Bis-tools/utils/vcf2bed6plus2.pl combines + and - strand
+    # CpGs by default and does not implement a per-strand split flag (the
+    # --seperate_strand option in older lab-local copies was a custom
+    # extension never merged upstream). If you need per-strand BEDs, run a
+    # downstream split (awk on column 6, or pre-split the VCF by strand).
     my @ctx = $allC ? qw(GCH HCG GCG HCH) : qw(GCH HCG);
     foreach my $c (@ctx) {
         run("vcf2bed6plus2 $c",
-            "perl $VCF2BED --only_good_call --seperate_strand $cyt_filt $c");
+            "perl $VCF2BED --only_good_call $cyt_filt $c");
     }
 }
 
