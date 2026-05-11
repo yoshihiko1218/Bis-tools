@@ -1,14 +1,14 @@
 /**
  * 
  */
-package main.java.edu.usc.epigenome.uecgatk.bissnp.filters;
+package edu.usc.epigenome.uecgatk.bissnp.filters;
 
 import htsjdk.samtools.SAMRecord;
 
 import org.broadinstitute.gatk.utils.commandline.Argument;
 import org.broadinstitute.gatk.engine.filters.ReadFilter;
 
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BisulfiteEnums.INVERT_DUPS;
+import edu.usc.epigenome.uecgatk.bissnp.BisulfiteEnums.INVERT_DUPS;
 
 /**
  * @author yaping

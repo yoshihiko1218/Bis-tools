@@ -1,4 +1,4 @@
-package main.java.edu.usc.epigenome.uecgatk.bissnp.writer;
+package edu.usc.epigenome.uecgatk.bissnp.writer;
 
 import java.io.*;
 
@@ -21,9 +21,9 @@ import org.broadinstitute.gatk.engine.GenomeAnalysisEngine;
 import htsjdk.variant.variantcontext.writer.SortingVariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BisSNP;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BisSNPUtils;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BisulfiteVCFConstants;
+import edu.usc.epigenome.uecgatk.bissnp.BisSNP;
+import edu.usc.epigenome.uecgatk.bissnp.BisSNPUtils;
+import edu.usc.epigenome.uecgatk.bissnp.BisulfiteVCFConstants;
 
 /*
  * Bis-SNP/BisSNP: It is a genotyping and methylation calling in bisulfite treated massively

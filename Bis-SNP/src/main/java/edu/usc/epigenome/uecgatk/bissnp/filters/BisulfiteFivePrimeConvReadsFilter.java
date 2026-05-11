@@ -1,11 +1,11 @@
 /**
  * 
  */
-package main.java.edu.usc.epigenome.uecgatk.bissnp.filters;
+package edu.usc.epigenome.uecgatk.bissnp.filters;
 
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BaseUtilsMore;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BisSNPUtils;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BisulfiteSAMConstants;
+import edu.usc.epigenome.uecgatk.bissnp.BaseUtilsMore;
+import edu.usc.epigenome.uecgatk.bissnp.BisSNPUtils;
+import edu.usc.epigenome.uecgatk.bissnp.BisulfiteSAMConstants;
 import htsjdk.samtools.SAMRecord;
 
 import org.broadinstitute.gatk.utils.commandline.Argument;
@@ -65,12 +65,19 @@ public class BisulfiteFivePrimeConvReadsFilter extends ReadFilter {
 			
 		
 		
-		if(samRecord.getReadPairedFlag() && samRecord.getSecondOfPairFlag())
+		// XG-aware strand decision (full XG fix).
+		String __xg = samRecord.getStringAttribute("XG");
+		if ("CT".equals(__xg)) {
+			negStrand = false;
+		} else if ("GA".equals(__xg)) {
+			negStrand = true;
+		} else if (samRecord.getReadPairedFlag() && samRecord.getSecondOfPairFlag()) {
 			negStrand = !negStrand;
-		
+		}
+
 		if(negStrand){
 			bases = BaseUtils.simpleReverseComplement(bases);
-			refBases = BaseUtils.simpleReverseComplement(refBases);	
+			refBases = BaseUtils.simpleReverseComplement(refBases);
 		}
 		byte[] patterns = patConv5.getBytes();
 		

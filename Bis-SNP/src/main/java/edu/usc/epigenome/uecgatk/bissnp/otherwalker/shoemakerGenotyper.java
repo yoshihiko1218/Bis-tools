@@ -3,7 +3,7 @@
  * BisSNP it is only dealing with ShoemakerReadsConversion's resul. It only looks at dbSNP
  * position with 10X, then it will do overlapped with samtools result..
  */
-package main.java.edu.usc.epigenome.uecgatk.bissnp.otherwalker;
+package edu.usc.epigenome.uecgatk.bissnp.otherwalker;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -41,8 +41,8 @@ import org.broadinstitute.gatk.utils.sam.GATKSAMRecord;
 
 import htsjdk.variant.variantcontext.VariantContext;
 
-import main.java.edu.usc.epigenome.uecgatk.bissnp.writer.bedObject;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.writer.bedObjectWriterImp;
+import edu.usc.epigenome.uecgatk.bissnp.writer.bedObject;
+import edu.usc.epigenome.uecgatk.bissnp.writer.bedObjectWriterImp;
 
 /**
  * @author yaping

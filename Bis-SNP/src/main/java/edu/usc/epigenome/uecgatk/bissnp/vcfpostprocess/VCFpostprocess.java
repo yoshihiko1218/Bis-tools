@@ -3,7 +3,7 @@
  * filters, then get into VCFstatisticsWalker to get summary statistics for different cytosines
  * (maybe it is better to integrated here..).
  */
-package main.java.edu.usc.epigenome.uecgatk.bissnp.vcfpostprocess;
+package edu.usc.epigenome.uecgatk.bissnp.vcfpostprocess;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -37,11 +37,11 @@ import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.variantcontext.Genotype;
 import htsjdk.variant.variantcontext.VariantContext;
 
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BaseUtilsMore;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BisSNPUtils;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BisulfiteVCFConstants;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.writer.SortingTcgaVCFWriter;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.writer.TcgaVCFWriter;
+import edu.usc.epigenome.uecgatk.bissnp.BaseUtilsMore;
+import edu.usc.epigenome.uecgatk.bissnp.BisSNPUtils;
+import edu.usc.epigenome.uecgatk.bissnp.BisulfiteVCFConstants;
+import edu.usc.epigenome.uecgatk.bissnp.writer.SortingTcgaVCFWriter;
+import edu.usc.epigenome.uecgatk.bissnp.writer.TcgaVCFWriter;
 
 /**
  * @author yaping

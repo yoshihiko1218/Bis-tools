@@ -1,81 +1,80 @@
 /**
- * 
+ * XG-aware BisulfiteMismatchReadsFilter (full fix).
+ *
+ * Consults the XG tag (set by bhmem-XG) to decide which bisulfite conversion
+ * pattern is tolerated for this read:
+ *   XG=CT  → tolerate  ref=C  read=T   (read came from + strand template)
+ *   XG=GA  → tolerate  ref=G  read=A   (read came from - strand template)
+ * Falls back to the 2018 simpleReverseComplement + library-agnostic logic
+ * only if the XG tag is missing.
  */
-package main.java.edu.usc.epigenome.uecgatk.bissnp.filters;
+package edu.usc.epigenome.uecgatk.bissnp.filters;
 
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BaseUtilsMore;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BisSNPUtils;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BisulfiteSAMConstants;
+import edu.usc.epigenome.uecgatk.bissnp.BaseUtilsMore;
+import edu.usc.epigenome.uecgatk.bissnp.BisSNPUtils;
+import edu.usc.epigenome.uecgatk.bissnp.BisulfiteSAMConstants;
 import htsjdk.samtools.SAMRecord;
 
 import org.broadinstitute.gatk.utils.commandline.Argument;
 import org.broadinstitute.gatk.engine.filters.ReadFilter;
 import org.broadinstitute.gatk.utils.BaseUtils;
 
-/**
- * @author yaping
- * @contact lyping1986@gmail.com
- * @time Sep 15, 2013 10:49:14 PM
- * 
- */
 public class BisulfiteMismatchReadsFilter extends ReadFilter {
 
-	@Argument(fullName = "max_mismatches", shortName = "mm", doc = "Maximum percentage of non-bisulfite mismatches within a read for a read to be used for calling. Default: 0.3(30% of mismatches allowed)", required = false)
+	@Argument(fullName = "max_mismatches", shortName = "mm",
+			doc = "Maximum percentage of non-bisulfite mismatches within a read for a read to be used for calling. Default: 0.3",
+			required = false)
 	public static double MAX_MISMATCHES = 0.3;
-	
-	/* (non-Javadoc)
-	 * @see net.sf.picard.filter.SamRecordFilter#filterOut(htsjdk.samtools.SAMRecord)
-	 */
+
 	@Override
 	public boolean filterOut(SAMRecord read) {
-		if(read.getStringAttribute(BisulfiteSAMConstants.MD_TAG) == null){
-			return false;
-		}
+		if (read.getStringAttribute(BisulfiteSAMConstants.MD_TAG) == null) return false;
 		try {
 			return hasTooManyBisulfiteMismathces(read);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		} catch (Exception e) { e.printStackTrace(); }
 		return false;
 	}
-	
-	public static boolean hasTooManyBisulfiteMismathces(SAMRecord read) throws Exception{
-		
-		boolean negativeStrand = read.getReadNegativeStrandFlag();
-		boolean secondEnd = read.getReadPairedFlag() && read.getSecondOfPairFlag();
 
-		byte[] refBases = BaseUtilsMore.toUpperCase(BisSNPUtils.modifyRefSeqByCigar(BisSNPUtils.refStrFromMd(read), read.getCigarString()));
-		
-		
-		byte[] bases = BaseUtilsMore.toUpperCase(BisSNPUtils.getClippedReadsBase(read));
-		if (negativeStrand) {
-			bases = BaseUtils.simpleReverseComplement(bases);
-			refBases = BaseUtils.simpleReverseComplement(refBases);
+	public static boolean hasTooManyBisulfiteMismathces(SAMRecord read) throws Exception {
+		byte[] refBases = BaseUtilsMore.toUpperCase(
+				BisSNPUtils.modifyRefSeqByCigar(BisSNPUtils.refStrFromMd(read), read.getCigarString()));
+		byte[] bases    = BaseUtilsMore.toUpperCase(BisSNPUtils.getClippedReadsBase(read));
 
-		}
-		
-		int numberOfMismatches = 0;
-		for(int i = 0; i < bases.length; i++){
-			if( !BaseUtils.basesAreEqual(refBases[i], bases[i]) && BaseUtilsMore.isBisulfiteMismatch(refBases[i], bases[i],negativeStrand))
-				numberOfMismatches++;
-			if(numberOfMismatches > MAX_MISMATCHES * bases.length){
-				//System.err.println(read.getReadString() + "\t" + read.getCigarString());
-			//	System.err.println(new String(refBases) + "\t" + refBases.length);
-			//	System.err.println(new String(bases) + "\t" + bases.length + "\t" + negativeStrand + "\t" + secondEnd + "\t" + numberOfMismatches);
+		String xg = read.getStringAttribute("XG");
+		byte tolRef = 0, tolBase = 0;
+		if ("CT".equals(xg)) { tolRef = (byte)'C'; tolBase = (byte)'T'; }
+		else if ("GA".equals(xg)) { tolRef = (byte)'G'; tolBase = (byte)'A'; }
 
-				return true;
+		if (tolRef == 0) {
+			// XG missing: fall back to 2018 simpleReverseComplement + library-agnostic
+			boolean neg = read.getReadNegativeStrandFlag();
+			if (neg) {
+				bases = BaseUtils.simpleReverseComplement(bases);
+				refBases = BaseUtils.simpleReverseComplement(refBases);
 			}
-				
+			int len = Math.min(bases.length, refBases.length);
+			int nmm = 0;
+			for (int i = 0; i < len; i++) {
+				if (BaseUtils.basesAreEqual(refBases[i], bases[i])) continue;
+				if (BaseUtilsMore.isBisulfiteMismatch(refBases[i], bases[i], neg)) nmm++;
+				if (nmm > MAX_MISMATCHES * len) return true;
+			}
+			return false;
 		}
-		//System.err.println(numberOfMismatches);
+
+		// XG present: compare in the read's aligned frame directly; tolerate the
+		// one conversion pattern indicated by XG.
+		int len = Math.min(bases.length, refBases.length);
+		int nmm = 0;
+		for (int i = 0; i < len; i++) {
+			if (BaseUtils.basesAreEqual(refBases[i], bases[i])) continue;
+			if (refBases[i] == tolRef && bases[i] == tolBase) continue;
+			nmm++;
+			if (nmm > MAX_MISMATCHES * len) return true;
+		}
 		return false;
 	}
 
 	@Override
-	public boolean filterOut(SAMRecord arg0, SAMRecord arg1) {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
+	public boolean filterOut(SAMRecord a, SAMRecord b) { return false; }
 }

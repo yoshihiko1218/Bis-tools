@@ -1,4 +1,4 @@
-package main.java.edu.usc.epigenome.uecgatk.bissnp;
+package edu.usc.epigenome.uecgatk.bissnp;
 
 /*
  * Bis-SNP/BisSNP: It is a genotyping and methylation calling in bisulfite treated massively

@@ -5,7 +5,7 @@
  * converted to its reverse complement reads. Cs in reads are converted to Ts, this is called in
  * silico demethylation.
  */
-package main.java.edu.usc.epigenome.uecgatk.bissnp.otherwalker;
+package edu.usc.epigenome.uecgatk.bissnp.otherwalker;
 
 import java.io.File;
 import java.util.ArrayList;

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package main.java.edu.usc.epigenome.uecgatk.bissnp.writer;
+package edu.usc.epigenome.uecgatk.bissnp.writer;
 
 /**
  * @author yaping

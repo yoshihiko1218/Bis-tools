@@ -1,4 +1,4 @@
-package main.java.edu.usc.epigenome.uecgatk.bissnp;
+package edu.usc.epigenome.uecgatk.bissnp;
 
 
 import htsjdk.samtools.util.CigarUtil;
@@ -584,9 +584,18 @@ public class BisSNPUtils {
 			if(ref == null || convStart == -1)
 				return true;
 			byte refBase=ref.getBase();
-			boolean negStrand = samRecord.getReadNegativeStrandFlag();
-			if(samRecord.getReadPairedFlag() && samRecord.getSecondOfPairFlag()){
-				negStrand = !negStrand;
+			// XG-aware strand decision (full XG fix).
+			String __xg = samRecord.getStringAttribute("XG");
+			boolean negStrand;
+			if ("CT".equals(__xg)) {
+				negStrand = false;
+			} else if ("GA".equals(__xg)) {
+				negStrand = true;
+			} else {
+				negStrand = samRecord.getReadNegativeStrandFlag();
+				if(samRecord.getReadPairedFlag() && samRecord.getSecondOfPairFlag()){
+					negStrand = !negStrand;
+				}
 			}
 			if(negStrand){
 				if(offset > samRecord.getReadLength()-convStart){ //unconverted region in the read, the cytosine strand are filter out for methylation calling

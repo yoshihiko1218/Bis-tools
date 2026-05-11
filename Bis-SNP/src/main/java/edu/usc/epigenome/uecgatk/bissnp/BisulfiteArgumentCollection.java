@@ -1,4 +1,4 @@
-package main.java.edu.usc.epigenome.uecgatk.bissnp;
+package edu.usc.epigenome.uecgatk.bissnp;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;

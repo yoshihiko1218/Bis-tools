@@ -1,7 +1,7 @@
 /**
  * 
  */
-package main.java.edu.usc.epigenome.uecgatk.bissnp.otherwalker;
+package edu.usc.epigenome.uecgatk.bissnp.otherwalker;
 
 import java.io.File;
 
@@ -28,14 +28,14 @@ import org.broadinstitute.gatk.engine.walkers.TreeReducible;
 import org.broadinstitute.gatk.engine.walkers.Window;
 import org.broadinstitute.gatk.utils.pileup.PileupElement;
 
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BisSNPUtils;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BisulfiteArgumentCollection;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.filters.BisulfiteFivePrimeConvReadsFilter;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.filters.BisulfiteIncompleteConvReadsFilter;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.filters.BisulfiteMismatchReadsFilter;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.filters.InvertedDupsReadFilter;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.filters.MappingQualityFilter;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.filters.NotProperPairedReadFilter;
+import edu.usc.epigenome.uecgatk.bissnp.BisSNPUtils;
+import edu.usc.epigenome.uecgatk.bissnp.BisulfiteArgumentCollection;
+import edu.usc.epigenome.uecgatk.bissnp.filters.BisulfiteFivePrimeConvReadsFilter;
+import edu.usc.epigenome.uecgatk.bissnp.filters.BisulfiteIncompleteConvReadsFilter;
+import edu.usc.epigenome.uecgatk.bissnp.filters.BisulfiteMismatchReadsFilter;
+import edu.usc.epigenome.uecgatk.bissnp.filters.InvertedDupsReadFilter;
+import edu.usc.epigenome.uecgatk.bissnp.filters.MappingQualityFilter;
+import edu.usc.epigenome.uecgatk.bissnp.filters.NotProperPairedReadFilter;
 
 /**
  * @author yaping

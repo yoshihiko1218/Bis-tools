@@ -1,4 +1,4 @@
-package main.java.edu.usc.epigenome.uecgatk.bissnp.writer;
+package edu.usc.epigenome.uecgatk.bissnp.writer;
 
 import java.io.File;
 import java.io.IOException;

@@ -1,4 +1,4 @@
-package main.java.edu.usc.epigenome.uecgatk.bissnp.writer;
+package edu.usc.epigenome.uecgatk.bissnp.writer;
 
 import net.boeckling.crc.CRC64;
 

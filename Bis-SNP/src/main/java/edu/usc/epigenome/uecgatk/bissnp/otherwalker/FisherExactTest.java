@@ -5,7 +5,7 @@
 // This package may be distributed under the
 // terms of the Lesser GNU General Public License (LGPL)
 
-package main.java.edu.usc.epigenome.uecgatk.bissnp.otherwalker;
+package edu.usc.epigenome.uecgatk.bissnp.otherwalker;
 
 /**
  * This does a Fisher Exact test. The Fisher's Exact test procedure calculates an exact probability

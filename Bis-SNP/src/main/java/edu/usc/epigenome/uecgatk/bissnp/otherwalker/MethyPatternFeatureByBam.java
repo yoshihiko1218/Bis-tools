@@ -1,7 +1,7 @@
 /**
  * maybe it is better to write rodWlker rather than Locus walker for this kind of alignment..
  */
-package main.java.edu.usc.epigenome.uecgatk.bissnp.otherwalker;
+package edu.usc.epigenome.uecgatk.bissnp.otherwalker;
 
 import java.io.File;
 import java.util.LinkedList;
@@ -44,15 +44,15 @@ import org.broadinstitute.gatk.engine.walkers.Window;
 import org.broadinstitute.gatk.utils.GenomeLoc;
 
 
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BisulfiteArgumentCollection;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BisulfiteGenotyperEngine;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BisulfiteVariantCallContext;
+import edu.usc.epigenome.uecgatk.bissnp.BisulfiteArgumentCollection;
+import edu.usc.epigenome.uecgatk.bissnp.BisulfiteGenotyperEngine;
+import edu.usc.epigenome.uecgatk.bissnp.BisulfiteVariantCallContext;
 
 import org.broadinstitute.gatk.engine.filters.FailsVendorQualityCheckFilter;
 import org.broadinstitute.gatk.engine.filters.MappingQualityZeroFilter;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.filters.*;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.writer.bedObject;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.writer.bedObjectWriterImp;
+import edu.usc.epigenome.uecgatk.bissnp.filters.*;
+import edu.usc.epigenome.uecgatk.bissnp.writer.bedObject;
+import edu.usc.epigenome.uecgatk.bissnp.writer.bedObjectWriterImp;
 import java.util.HashSet;
 
 /**

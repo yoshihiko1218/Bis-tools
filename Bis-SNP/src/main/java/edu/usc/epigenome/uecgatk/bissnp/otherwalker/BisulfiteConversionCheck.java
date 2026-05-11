@@ -3,7 +3,7 @@
  * It will output the histogram of # of methylated CH/HCH in a reads. and also the filtered BAM file. 
  * This may be later:  Also a plot of methylation level along cycle CH/HCH
  */
-package main.java.edu.usc.epigenome.uecgatk.bissnp.otherwalker;
+package edu.usc.epigenome.uecgatk.bissnp.otherwalker;
 
 import java.io.File;
 import java.io.PrintStream;
@@ -32,7 +32,7 @@ import org.broadinstitute.gatk.utils.refdata.RefMetaDataTracker;
 import org.broadinstitute.gatk.utils.sam.GATKSAMRecord;
 import org.broadinstitute.gatk.engine.filters.*;
 
-import main.java.edu.usc.epigenome.uecgatk.bissnp.BaseUtilsMore;
+import edu.usc.epigenome.uecgatk.bissnp.BaseUtilsMore;
 
 
 /**

@@ -1,7 +1,7 @@
 /**
  * 
  */
-package main.java.edu.usc.epigenome.uecgatk.bissnp.otherwalker;
+package edu.usc.epigenome.uecgatk.bissnp.otherwalker;
 
 import org.broadinstitute.gatk.engine.filters.DuplicateReadFilter;
 import org.broadinstitute.gatk.engine.filters.FailsVendorQualityCheckFilter;
@@ -13,10 +13,10 @@ import org.broadinstitute.gatk.engine.walkers.DataSource;
 import org.broadinstitute.gatk.engine.walkers.ReadFilters;
 import org.broadinstitute.gatk.tools.walkers.coverage.DepthOfCoverage;
 
-import main.java.edu.usc.epigenome.uecgatk.bissnp.filters.BisulfiteIncompleteConvReadsFilter;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.filters.BisulfiteMismatchReadsFilter;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.filters.InvertedDupsReadFilter;
-import main.java.edu.usc.epigenome.uecgatk.bissnp.filters.NotProperPairedReadFilter;
+import edu.usc.epigenome.uecgatk.bissnp.filters.BisulfiteIncompleteConvReadsFilter;
+import edu.usc.epigenome.uecgatk.bissnp.filters.BisulfiteMismatchReadsFilter;
+import edu.usc.epigenome.uecgatk.bissnp.filters.InvertedDupsReadFilter;
+import edu.usc.epigenome.uecgatk.bissnp.filters.NotProperPairedReadFilter;
 
 /**
  * Add filters into DepthOfCoverageWalker to control the estimation in different bad reads condition
