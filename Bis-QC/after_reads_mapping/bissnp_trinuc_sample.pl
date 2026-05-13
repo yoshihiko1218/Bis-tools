@@ -73,7 +73,7 @@ sub bissnp{
 	# Non-directional libraries (scNOMe-HiC, scNMT-seq): XG-aware code paths
 	# require -nonDirectional; Hi-C chimeric mates need -badMate.
 	$cmd .= "-nonDirectional -badMate " if $nonDirectional ne "";
-	$cmd .= "-stand_call_conf 20 -stand_emit_conf 0 -nt $numcores -minConv 1 \n";
+	$cmd .= "-stand_call_conf 20 -nt $numcores -minConv 1 \n";
 
 	print STDERR "$cmd\n";
 	system($cmd)==0 || die "can't generate trinucleotide methylaiton level in chromesome $interval:$!\n";
