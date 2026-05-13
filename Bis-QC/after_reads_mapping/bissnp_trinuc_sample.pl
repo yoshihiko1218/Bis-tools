@@ -18,6 +18,7 @@ chomp $numcores;
 my $mem="8"; #how many Giga bytes memory need
 my $interval = "chrM";
 my $not_use_bad_mates="";
+my $nonDirectional="";
 
 GetOptions(
 	"bissnp=s" => \$BISSNP,
@@ -27,6 +28,7 @@ GetOptions(
 	"mem=i" => \$mem,
 	"interval=s" => \$interval,
 	"not_use_bad_mates" => \$not_use_bad_mates,
+	"nonDirectional" => \$nonDirectional,
 );
 
 
@@ -68,6 +70,9 @@ sub bissnp{
 	}
 	$cmd .= "$c_str";
 	$cmd .= "-toCoverage 99999999 " if ($interval eq "chrM" || $interval eq "MT" || $not_use_bad_mates eq "");
+	# Non-directional libraries (scNOMe-HiC, scNMT-seq): XG-aware code paths
+	# require -nonDirectional; Hi-C chimeric mates need -badMate.
+	$cmd .= "-nonDirectional -badMate " if $nonDirectional ne "";
 	$cmd .= "-stand_call_conf 20 -stand_emit_conf 0 -nt $numcores -minConv 1 \n";
 
 	print STDERR "$cmd\n";
