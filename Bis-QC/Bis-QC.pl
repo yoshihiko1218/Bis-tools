@@ -288,8 +288,28 @@ sub check_bs_conv {
 	print STDERR "Bisulfite conversion rate distribution of whole reads:\n $cmd\n";
 	system($cmd)==0 || die "Unexpected stop at bisulfite conversion rate distribution check step: $! \n";
 
-	##Methylation level around different trinucleotide on chrM and chr21
+	##Methylation level around different trinucleotide on chrM and an autosome.
+	##chr21 is used for human; if the reference does not have chr21 (e.g. mouse
+	##mm10, which only goes to chr19), fall back to chr19. Detected from the
+	##genome's .fai index when present.
 	if($disable_trinuc_check eq ""){
+		my $autosome = "chr21";
+		my $fai = "$genome.fai";
+		if (-e $fai) {
+			my $has21 = 0; my $has19 = 0;
+			open(my $faih, "<", $fai) or die "Can't read $fai: $!";
+			while (my $line = <$faih>) {
+				my ($c) = split(/\t/, $line);
+				$has21 = 1 if $c eq "chr21";
+				$has19 = 1 if $c eq "chr19";
+			}
+			close($faih);
+			if (!$has21 && $has19) {
+				$autosome = "chr19";
+			}
+		}
+		print STDERR "Trinuc autosome selected: $autosome\n";
+
 		my $tri_nuc_log=$bam;
 		$tri_nuc_log=~s/\.bam$/.trinuc_methy.chrM.txt/;
 		$cmd="perl $bistools_path/Bis-QC/after_reads_mapping/bissnp_trinuc_sample.pl --bissnp $bistools_path/Bis-SNP/Bis-SNP.latest.jar --genome $genome --dbsnp $dbsnp --nt $nt --mem $mem --interval chrM ${nondir_flag}$tri_nuc_log $bam\n";
@@ -297,10 +317,10 @@ sub check_bs_conv {
 		system($cmd)==0 || die "Unexpected stop at methylation level of trinucleotides in chrM check step: $! \n";
 
 		$tri_nuc_log=$bam;
-		$tri_nuc_log=~s/\.bam$/.trinuc_methy.chr21.txt/;
-		$cmd="perl $bistools_path/Bis-QC/after_reads_mapping/bissnp_trinuc_sample.pl --bissnp $bistools_path/Bis-SNP/Bis-SNP.latest.jar --genome $genome --dbsnp $dbsnp --nt $nt --mem $mem --interval chr21 ${nondir_flag}$tri_nuc_log $bam\n";
-		print STDERR "Bisulfite conversion rate distribution of whole reads at chr21:\n $cmd\n";
-		system($cmd)==0 || die "Unexpected stop at methylation level of trinucleotides in chr21 check step: $! \n";
+		$tri_nuc_log=~s/\.bam$/.trinuc_methy.$autosome.txt/;
+		$cmd="perl $bistools_path/Bis-QC/after_reads_mapping/bissnp_trinuc_sample.pl --bissnp $bistools_path/Bis-SNP/Bis-SNP.latest.jar --genome $genome --dbsnp $dbsnp --nt $nt --mem $mem --interval $autosome ${nondir_flag}$tri_nuc_log $bam\n";
+		print STDERR "Bisulfite conversion rate distribution of whole reads at $autosome:\n $cmd\n";
+		system($cmd)==0 || die "Unexpected stop at methylation level of trinucleotides in $autosome check step: $! \n";
 	}
 
 
