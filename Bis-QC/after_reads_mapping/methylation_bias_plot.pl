@@ -49,6 +49,18 @@ system($cmd)==0 || die "can't generate methylation matrix file in methylation bi
 ##generate methylation bias plot:
 my $pdf=$file;
 $pdf=~s/\.bam$/.${pattern}.methy_bias_plot.pdf/;
+
+# When a BAM has too few reads passing filters, QuickMethylationLevel writes
+# an empty cycle.txt. R's read.table() then dies on "no lines available", which
+# aborts Bis-QC.pl and loses every downstream QC output for that cell. Drop a
+# placeholder PDF so the pipeline contract is satisfied, then return cleanly
+# so Bis-QC.pl proceeds to the remaining QC steps.
+if (! -s $out) {
+	print STDERR "WARNING: $out is empty (insufficient $pattern reads in $file); writing placeholder PDF and skipping plot\n";
+	open(my $pdfh, ">", $pdf) or die "Can't create placeholder $pdf: $!";
+	close($pdfh);
+	exit 0;
+}
 my $r_cmd="$R --no-restore --no-save --args input=$out output=$pdf < $r_script\n";
 print STDERR $r_cmd;
 system($r_cmd)==0 || die "can't generate methylation bias plot in methylation bias check part:$!\n";

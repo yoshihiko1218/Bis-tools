@@ -48,6 +48,17 @@ system($cmd)==0 || die "can't generate methylation histogram file in bisulfite c
 ##generate methylation bias plot:
 my $pdf=$file;
 $pdf=~s/\.bam$/.${pattern}.bisuflite_conv_distribution_plot.pdf/;
+
+# Empty $out_hist means BisulfiteConversionCheck found no usable reads (e.g. a
+# nearly-empty cell BAM where every read fails MAPQ/badMate). R's read.table
+# would die on "no lines available" and abort Bis-QC.pl. Drop a placeholder PDF
+# and return so Bis-QC.pl continues to the trinucleotide / coverage steps.
+if (! -s $out_hist) {
+	print STDERR "WARNING: $out_hist is empty (insufficient $pattern reads in $file); writing placeholder PDF and skipping plot\n";
+	open(my $pdfh, ">", $pdf) or die "Can't create placeholder $pdf: $!";
+	close($pdfh);
+	exit 0;
+}
 my $r_cmd="$R --no-restore --no-save --args input=$out_hist output=$pdf < $r_script\n";
 print STDERR $r_cmd;
 system($r_cmd)==0 || die "can't generate methylation bias plot in bisulfite conversion distribution check part:$!\n";
