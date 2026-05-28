@@ -8,14 +8,24 @@
 ## chain in BisSNP ≥1.1.
 ##
 ## Outputs (with default --prefix derived from BAM):
-##   <prefix>.cyt.vcf                       cytosine VCF (raw, per-base methylation)
-##   <prefix>.snp.vcf                       SNP VCF
-##   <prefix>.GCH.txt                       per-read GCH methylation status
-##   <prefix>.HCG.txt                       per-read HCG methylation status
-##   <prefix>.cyt.filtered.sort.vcf         filtered + sorted cytosine VCF
-##   <prefix>.cyt.filtered.sort.GCH.6plus2.bed   per-base GCH methylation BED (strands combined)
-##   <prefix>.cyt.filtered.sort.HCG.6plus2.bed   per-base HCG methylation BED (strands combined)
-##   (and GCG / HCH BEDs if --allC)
+##   <prefix>.cyt.vcf                                  cytosine VCF (raw, per-base methylation)
+##   <prefix>.snp.vcf                                  SNP VCF
+##   <prefix>.GCH.txt                                  per-read GCH methylation status
+##   <prefix>.HCG.txt                                  per-read HCG methylation status
+##   <prefix>.cyt.filtered.sort.vcf                    filtered + sorted cytosine VCF
+##   <prefix>.cyt.filtered.sort.GCH.6plus2.bed         per-base GCH methylation BED (combined strand)
+##   <prefix>.cyt.filtered.sort.HCG.6plus2.bed         per-base HCG methylation BED (combined strand)
+##   <prefix>.cyt.filtered.sort.GCH.strand.6plus2.bed  per-base GCH methylation BED (per strand)
+##   <prefix>.cyt.filtered.sort.HCG.strand.6plus2.bed  per-base HCG methylation BED (per strand)
+##   <prefix>.cyt.filtered.sort.BisSNP-<v>.GCH.bedgraph             methylation bedGraph (GCH)
+##   <prefix>.cyt.filtered.sort.BisSNP-<v>.HCG.bedgraph             methylation bedGraph (HCG)
+##   <prefix>.cyt.filtered.sort.BisSNP-<v>.GCH.coverage.bedgraph    C+T read coverage bedGraph (GCH)
+##   <prefix>.cyt.filtered.sort.BisSNP-<v>.HCG.coverage.bedgraph    C+T read coverage bedGraph (HCG)
+##   <prefix>.cyt.filtered.sort.BisSNP-<v>.GCH.bw                   methylation bigWig (GCH)
+##   <prefix>.cyt.filtered.sort.BisSNP-<v>.HCG.bw                   methylation bigWig (HCG)
+##   <prefix>.cyt.filtered.sort.BisSNP-<v>.GCH.coverage.bw          coverage bigWig (GCH)
+##   <prefix>.cyt.filtered.sort.BisSNP-<v>.HCG.coverage.bw          coverage bigWig (HCG)
+##   (and GCG / HCH variants if --allC)
 
 use strict;
 use Getopt::Long;
@@ -42,8 +52,12 @@ PREREQUISITES
     scripts/strip_paired_all.py before this wrapper) — without it, the
     GATK 3.8 adaptor-clip filter silently drops the reverse mate of
     chimeric Hi-C ligations.
-  - Helper scripts sortByRefAndCor.pl and vcf2bed6plus2.pl found in the
-    same directory as this wrapper (default: same Bis-SNP/ install).
+  - Helper scripts found alongside this wrapper or in ../utils/:
+      sortByRefAndCor.pl   vcf2bed6plus2.pl   vcf2bed6plus2.strand.pl
+      vcf2bedGraph.pl      vcf2coverage.pl
+  - bedGraphToBigWig (UCSC) on PATH or supplied via --bgtobw, for bigWig
+    output. Use --noBigwig to skip bigWig conversion.
+  - REF .fai sidecar (used to auto-derive chrom.sizes for bigWig).
 
 POSITIONAL ARGUMENTS
   BISSNP_JAR    Path to BisSNP jar (e.g. Bis-SNP.latest.jar or BisSNP-1.1.jar).
@@ -65,9 +79,17 @@ OPTIONS
   --mm NUM          max non-bisulfite mismatch fraction (default: 0.3)
   --minPatConv NUM  min CH-pattern conversion ratio (default: 1.0 = disabled)
   --minConv NUM     min 5'-converted Cs required (default: 0)
-  --allC            also produce per-base BED for GCG and HCH
-                    (default: only GCH and HCG)
-  --skipBed         skip the BED post-processing chain (run BisSNP only)
+  --allC            also produce per-base BED / bedGraph / bigWig for GCG
+                    and HCH (default: only GCH and HCG)
+  --skipBed         skip the BED / bedGraph / bigWig post-processing chain
+                    (run BisSNP only)
+  --noStrand        skip the per-strand 6plus2 BED step (combined-strand only)
+  --encryptReadIds  use BisSNP's legacy CRC64-hashed read IDs in the per-read
+                    .GCH.txt / .HCG.txt output (default: PLAIN-TEXT read IDs
+                    via `-notEncrypt`, so reads can be cross-referenced back
+                    to the BAM)
+  --noBigwig        skip bedGraph→bigWig conversion (bedGraphs still produced)
+  --bgtobw PATH     path to bedGraphToBigWig binary (default: search PATH)
   --java8 PATH      path to Java 8 binary
                     (default: /software/java/jdk1.8.0_191/bin/java)
   --dryRun          print commands without executing
@@ -97,6 +119,10 @@ my $minPatConv = 1.0;
 my $minConv    = 0;
 my $allC       = 0;
 my $skipBed    = 0;
+my $noStrand   = 0;
+my $noBigwig   = 0;
+my $encryptIds = 0;
+my $bgtobw     = "";
 my $java8      = "/software/java/jdk1.8.0_191/bin/java";
 my $dryRun     = 0;
 my $help       = 0;
@@ -114,6 +140,10 @@ GetOptions(
     "minConv=i"    => \$minConv,
     "allC"         => \$allC,
     "skipBed"      => \$skipBed,
+    "noStrand"     => \$noStrand,
+    "noBigwig"     => \$noBigwig,
+    "encryptReadIds" => \$encryptIds,
+    "bgtobw=s"     => \$bgtobw,
     "java8=s"      => \$java8,
     "dryRun"       => \$dryRun,
     "help"         => \$help,
@@ -146,12 +176,36 @@ sub find_helper {
     }
     return undef;
 }
-my $SORT_VCF = find_helper("sortByRefAndCor.pl");
-my $VCF2BED  = find_helper("vcf2bed6plus2.pl");
+my $SORT_VCF     = find_helper("sortByRefAndCor.pl");
+my $VCF2BED      = find_helper("vcf2bed6plus2.pl");
+my $VCF2BED_STR  = find_helper("vcf2bed6plus2.strand.pl");
+my $VCF2BG       = find_helper("vcf2bedGraph.pl");
+my $VCF2COV      = find_helper("vcf2coverage.pl");
 
 unless ($skipBed) {
-    die "Helper sortByRefAndCor.pl not found near $script_dir\n" unless $SORT_VCF;
-    die "Helper vcf2bed6plus2.pl not found near $script_dir\n"   unless $VCF2BED;
+    die "Helper sortByRefAndCor.pl not found near $script_dir\n"     unless $SORT_VCF;
+    die "Helper vcf2bed6plus2.pl not found near $script_dir\n"       unless $VCF2BED;
+    die "Helper vcf2bed6plus2.strand.pl not found near $script_dir\n"
+        if !$noStrand && !$VCF2BED_STR;
+    die "Helper vcf2bedGraph.pl not found near $script_dir\n"        unless $VCF2BG;
+    die "Helper vcf2coverage.pl not found near $script_dir\n"        unless $VCF2COV;
+}
+
+# Discover bedGraphToBigWig binary (only matters if we'll actually do bw step).
+sub which {
+    my $prog = shift;
+    foreach my $d (split /:/, ($ENV{PATH} || "")) {
+        my $p = "$d/$prog";
+        return $p if -x $p;
+    }
+    return undef;
+}
+unless ($skipBed || $noBigwig) {
+    if (!$bgtobw) {
+        $bgtobw = which("bedGraphToBigWig");
+    }
+    die "bedGraphToBigWig not found on PATH; pass --bgtobw PATH or use --noBigwig\n"
+        unless $bgtobw && -x $bgtobw;
 }
 
 my $JAVA = "$java8 -Xmx${mem}G";
@@ -175,6 +229,12 @@ sub run {
 }
 
 sub step_genotyper {
+    # `-notEncrypt` emits original read IDs (plaintext) in the per-read
+    # .GCH.txt / .HCG.txt instead of BisSNP's default CRC64 hash. Hashes are
+    # destructive — once written you can't link a methylation row back to the
+    # source read in the BAM — so we default to plaintext. Pass --encryptReadIds
+    # to opt back into the legacy hash behavior.
+    my $not_encrypt = $encryptIds ? "" : " -notEncrypt";
     my $cmd = "$JAVA -jar $BISSNP \\\n"
             . "    -R $REF \\\n"
             . "    -I $BAM \\\n"
@@ -186,11 +246,11 @@ sub step_genotyper {
             . "    -cpgreads $hcg_per_read \\\n"
             . "    -out_modes NOMESEQ_MODE -sm GM \\\n"
             . "    -stand_call_conf $qual \\\n"
-            . "    -nonDirectional -badMate \\\n"
+            . "    -nonDirectional -badMate${not_encrypt} \\\n"
             . "    -mm $mm -minPatConv $minPatConv -minConv $minConv \\\n"
             . "    -mmq $mmq -mbq $mbq -nt $nt";
     $cmd .= " \\\n    -L $interval" if $interval;
-    run("BisulfiteGenotyper (NOMESEQ_MODE, non-directional)", $cmd);
+    run("BisulfiteGenotyper (NOMESEQ_MODE, non-directional, plaintext read IDs)", $cmd);
 }
 
 sub step_sort {
@@ -214,15 +274,79 @@ sub step_filter {
 }
 
 sub step_to_bed {
-    # NOTE: upstream Bis-tools/utils/vcf2bed6plus2.pl combines + and - strand
-    # CpGs by default and does not implement a per-strand split flag (the
-    # --seperate_strand option in older lab-local copies was a custom
-    # extension never merged upstream). If you need per-strand BEDs, run a
-    # downstream split (awk on column 6, or pre-split the VCF by strand).
+    # Combined-strand 6plus2 BED via upstream vcf2bed6plus2.pl.
     my @ctx = $allC ? qw(GCH HCG GCG HCH) : qw(GCH HCG);
     foreach my $c (@ctx) {
-        run("vcf2bed6plus2 $c",
+        run("vcf2bed6plus2 $c (combined strand)",
             "perl $VCF2BED --only_good_call $cyt_filt $c");
+    }
+}
+
+sub step_to_bed_strand {
+    # Per-strand 6plus2 BED via vcf2bed6plus2.strand.pl. Output names get
+    # a `.strand.` infix (e.g. *.GCH.strand.6plus2.bed) so they coexist
+    # with the combined-strand BEDs from step_to_bed.
+    my @ctx = $allC ? qw(GCH HCG GCG HCH) : qw(GCH HCG);
+    foreach my $c (@ctx) {
+        run("vcf2bed6plus2.strand $c (per strand)",
+            "perl $VCF2BED_STR $cyt_filt $c");
+    }
+}
+
+sub step_bedgraph {
+    # Methylation bedGraph (chr, start, end, methy%, numCT) and
+    # coverage bedGraph (chr, start, end, C+T reads).
+    # Output filenames bake in the BisSNP version from the VCF header,
+    # so we can't fully predict them here; the bigWig step globs.
+    my @ctx = $allC ? qw(GCH HCG GCG HCH) : qw(GCH HCG);
+    foreach my $c (@ctx) {
+        run("vcf2bedGraph $c (methylation)",
+            "perl $VCF2BG $cyt_filt $c");
+        run("vcf2coverage $c (C+T reads)",
+            "perl $VCF2COV $cyt_filt $c");
+    }
+}
+
+sub step_bigwig {
+    # bedGraph -> bigWig. Requires:
+    #   (1) a chrom.sizes file (auto-derived from ${REF}.fai),
+    #   (2) bedGraph input with no `track` header, no '.' value rows,
+    #       only chromosomes present in chrom.sizes, sorted by chr+pos.
+    # bedGraphToBigWig is strict and segfaults / errors on any of the above.
+
+    my $chrom_sizes = "${prefix}.chrom.sizes";
+    run("Derive chrom.sizes from ${REF}.fai",
+        "awk 'BEGIN{OFS=\"\\t\"} {print \$1,\$2}' ${REF}.fai > $chrom_sizes");
+
+    # Find every bedGraph produced from $cyt_filt (both methylation and
+    # coverage variants; both have the BisSNP version baked into their
+    # filenames so we glob).
+    my $cyt_stem = $cyt_filt;
+    $cyt_stem =~ s|\.vcf$||;
+    my @bgs = glob("${cyt_stem}.*.bedgraph");
+    if (!@bgs && !$dryRun) {
+        warn stamp() . "  No bedGraphs found matching ${cyt_stem}.*.bedgraph — skipping bigWig step\n";
+        return;
+    }
+
+    foreach my $bg (@bgs) {
+        my $sorted = $bg;
+        $sorted =~ s|\.bedgraph$|.sorted.bedgraph|;
+        my $bw    = $bg;
+        $bw    =~ s|\.bedgraph$|.bw|;
+
+        # Strip `track` header, drop rows with chrom not in chrom.sizes
+        # or value == '.' (low-CT sites in methylation bedGraph), then sort.
+        my $prep = qq(awk 'NR==FNR{c[\$1]=1;next} /^track/{next} (\$1 in c) && \$4!="."' )
+                 . qq($chrom_sizes $bg | sort -k1,1 -k2,2n -T ./ > $sorted);
+        run("Prepare $bg for bigWig", $prep);
+
+        run("bedGraphToBigWig $sorted",
+            "$bgtobw $sorted $chrom_sizes $bw");
+
+        # Drop the intermediate sorted bedGraph; keep the original bedGraph
+        # and the .bw.
+        run("rm $sorted", "rm -f $sorted") unless $dryRun;
     }
 }
 
@@ -234,8 +358,15 @@ unless ($skipBed) {
     step_sort();
     step_filter();
     step_to_bed();
+    step_to_bed_strand() unless $noStrand;
+    step_bedgraph();
+    step_bigwig()        unless $noBigwig;
 }
 
 print STDERR stamp() . "  Done. Per-read tables: $gch_per_read, $hcg_per_read\n";
-print STDERR stamp() . "  Per-base BEDs: ${prefix}.cyt.filtered.sort.{GCH,HCG}*.bed\n"
-    unless $skipBed;
+unless ($skipBed) {
+    print STDERR stamp() . "  Per-base BEDs:      ${prefix}.cyt.filtered.sort.{GCH,HCG}*.bed\n";
+    print STDERR stamp() . "  Methy/cov bedGraph: ${prefix}.cyt.filtered.sort.*.{GCH,HCG}*.bedgraph\n";
+    print STDERR stamp() . "  Methy/cov bigWig:   ${prefix}.cyt.filtered.sort.*.{GCH,HCG}*.bw\n"
+        unless $noBigwig;
+}
