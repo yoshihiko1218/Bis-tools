@@ -19,6 +19,7 @@ my $pattern = "WCW";
 my $genome="$bistools_path/resource/genome/hg19_rCRSchrm.fa";
 my $mem="8"; #how many Giga bytes memory need
 my $r_script = "$bistools_path/Bis-QC/after_reads_mapping/methyBiasDistPlot.R";
+my $nonDirectional = "";
 
 GetOptions(
 	"bissnp=s" => \$BISSNP,
@@ -26,20 +27,40 @@ GetOptions(
 	"pattern=s" => \$pattern,
 	"genome=s" => \$genome,
 	"mem=i" => \$mem,
+	"nonDirectional" => \$nonDirectional,
 );
 
 my $file=$ARGV[0];
 
+# Non-directional libraries (scNOMe-HiC, scNMT-seq, etc.) encode the
+# bisulfite-conversion frame in the XG tag rather than BAM is_reverse, and
+# Hi-C chimeric mates need -badMate to be kept past the GATK 3.8 adaptor
+# clip filter. The XG-aware code paths in BisSNP >= 1.1 only engage when
+# -nonDirectional is passed.
+my $nondir_args = $nonDirectional ne "" ? " -nonDirectional -badMate" : "";
+
 ##generate pattern methylation matrix file:
 my $out=$file;
 $out =~ s/\.bam$/.${pattern}.methy.cycle.txt/;
-my $cmd="java -Xmx${mem}g -jar $BISSNP -T QuickMethylationLevel -R $genome -I $file -pattern $pattern -patternHist $out\n";
+my $cmd="java -Xmx${mem}g -jar $BISSNP -T QuickMethylationLevel -R $genome -I $file -pattern $pattern -patternHist $out${nondir_args}\n";
 print STDERR $cmd;
 system($cmd)==0 || die "can't generate methylation matrix file in methylation bias check part:$!\n";
 
 ##generate methylation bias plot:
 my $pdf=$file;
 $pdf=~s/\.bam$/.${pattern}.methy_bias_plot.pdf/;
+
+# When a BAM has too few reads passing filters, QuickMethylationLevel writes
+# an empty cycle.txt. R's read.table() then dies on "no lines available", which
+# aborts Bis-QC.pl and loses every downstream QC output for that cell. Drop a
+# placeholder PDF so the pipeline contract is satisfied, then return cleanly
+# so Bis-QC.pl proceeds to the remaining QC steps.
+if (! -s $out) {
+	print STDERR "WARNING: $out is empty (insufficient $pattern reads in $file); writing placeholder PDF and skipping plot\n";
+	open(my $pdfh, ">", $pdf) or die "Can't create placeholder $pdf: $!";
+	close($pdfh);
+	exit 0;
+}
 my $r_cmd="$R --no-restore --no-save --args input=$out output=$pdf < $r_script\n";
 print STDERR $r_cmd;
 system($r_cmd)==0 || die "can't generate methylation bias plot in methylation bias check part:$!\n";

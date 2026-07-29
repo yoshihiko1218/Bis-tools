@@ -10,8 +10,8 @@
 ## Outputs (with default --prefix derived from BAM):
 ##   <prefix>.cyt.vcf                                  cytosine VCF (raw, per-base methylation)
 ##   <prefix>.snp.vcf                                  SNP VCF
-##   <prefix>.GCH.txt                                  per-read GCH methylation status
-##   <prefix>.HCG.txt                                  per-read HCG methylation status
+##   <prefix>.GCH.txt                                  per-read GCH methylation status (optional)
+##   <prefix>.HCG.txt                                  per-read HCG methylation status (optional)
 ##   <prefix>.cyt.filtered.sort.vcf                    filtered + sorted cytosine VCF
 ##   <prefix>.cyt.filtered.sort.GCH.6plus2.bed         per-base GCH methylation BED (combined strand)
 ##   <prefix>.cyt.filtered.sort.HCG.6plus2.bed         per-base HCG methylation BED (combined strand)
@@ -41,8 +41,8 @@ Usage:
 NON-DIRECTIONAL NOMe-seq / scNOMe-HiC wrapper. Runs BisulfiteGenotyper with
 the flag set required for libraries where the XG tag (not BAM is_reverse)
 defines the bisulfite-conversion frame, then post-processes the outputs
-into per-base BED files. Per-read GCH/HCG methylation tables are emitted
-inline by the genotyper.
+into per-base BED files. Per-read GCH/HCG methylation tables can be emitted
+inline by the genotyper with --enableReadTables.
 
 PREREQUISITES
   - BisSNP jar version >= 1.1 (for XG-aware filter chain).
@@ -84,10 +84,13 @@ OPTIONS
   --skipBed         skip the BED / bedGraph / bigWig post-processing chain
                     (run BisSNP only)
   --noStrand        skip the per-strand 6plus2 BED step (combined-strand only)
+  --enableReadTables
+                    emit per-read .GCH.txt / .HCG.txt methylation tables
+                    through BisSNP -gchreads / -cpgreads (default: disabled)
   --encryptReadIds  use BisSNP's legacy CRC64-hashed read IDs in the per-read
-                    .GCH.txt / .HCG.txt output (default: PLAIN-TEXT read IDs
-                    via `-notEncrypt`, so reads can be cross-referenced back
-                    to the BAM)
+                    .GCH.txt / .HCG.txt output when --enableReadTables is used
+                    (default: PLAIN-TEXT read IDs via `-notEncrypt`, so reads
+                    can be cross-referenced back to the BAM)
   --noBigwig        skip bedGraph→bigWig conversion (bedGraphs still produced)
   --bgtobw PATH     path to bedGraphToBigWig binary (default: search PATH)
   --java8 PATH      path to Java 8 binary
@@ -113,7 +116,7 @@ my $mem        = 20;
 my $nt         = 1;
 my $mmq        = 30;
 my $mbq        = 5;
-my $qual       = 1;
+my $qual       = 20;
 my $mm         = 0.3;
 my $minPatConv = 1.0;
 my $minConv    = 0;
@@ -121,6 +124,7 @@ my $allC       = 0;
 my $skipBed    = 0;
 my $noStrand   = 0;
 my $noBigwig   = 0;
+my $enableReadTables = 0;
 my $encryptIds = 0;
 my $bgtobw     = "";
 my $java8      = "/software/java/jdk1.8.0_191/bin/java";
@@ -142,6 +146,7 @@ GetOptions(
     "skipBed"      => \$skipBed,
     "noStrand"     => \$noStrand,
     "noBigwig"     => \$noBigwig,
+    "enableReadTables" => \$enableReadTables,
     "encryptReadIds" => \$encryptIds,
     "bgtobw=s"     => \$bgtobw,
     "java8=s"      => \$java8,
@@ -235,22 +240,29 @@ sub step_genotyper {
     # source read in the BAM — so we default to plaintext. Pass --encryptReadIds
     # to opt back into the legacy hash behavior.
     my $not_encrypt = $encryptIds ? "" : " -notEncrypt";
+    my $read_table_args = "";
+    if ($enableReadTables) {
+        $read_table_args = " \\\n"
+                         . "    -gchreads $gch_per_read \\\n"
+                         . "    -cpgreads $hcg_per_read";
+    }
+    my $read_table_desc = $enableReadTables ? "per-read tables enabled"
+                                            : "per-read tables disabled";
     my $cmd = "$JAVA -jar $BISSNP \\\n"
             . "    -R $REF \\\n"
             . "    -I $BAM \\\n"
             . "    -D $DBSNP \\\n"
             . "    -T BisulfiteGenotyper \\\n"
             . "    -vfn1 $cyt_vcf \\\n"
-            . "    -vfn2 $snp_vcf \\\n"
-            . "    -gchreads $gch_per_read \\\n"
-            . "    -cpgreads $hcg_per_read \\\n"
+            . "    -vfn2 $snp_vcf"
+            . $read_table_args . " \\\n"
             . "    -out_modes NOMESEQ_MODE -sm GM \\\n"
             . "    -stand_call_conf $qual \\\n"
-            . "    -nonDirectional -badMate${not_encrypt} \\\n"
+            . "    -badMate${not_encrypt} \\\n"
             . "    -mm $mm -minPatConv $minPatConv -minConv $minConv \\\n"
             . "    -mmq $mmq -mbq $mbq -nt $nt";
     $cmd .= " \\\n    -L $interval" if $interval;
-    run("BisulfiteGenotyper (NOMESEQ_MODE, non-directional, plaintext read IDs)", $cmd);
+    run("BisulfiteGenotyper (NOMESEQ_MODE, non-directional, $read_table_desc)", $cmd);
 }
 
 sub step_sort {
@@ -363,7 +375,11 @@ unless ($skipBed) {
     step_bigwig()        unless $noBigwig;
 }
 
-print STDERR stamp() . "  Done. Per-read tables: $gch_per_read, $hcg_per_read\n";
+if ($enableReadTables) {
+    print STDERR stamp() . "  Done. Per-read tables: $gch_per_read, $hcg_per_read\n";
+} else {
+    print STDERR stamp() . "  Done. Per-read tables disabled; pass --enableReadTables to emit them.\n";
+}
 unless ($skipBed) {
     print STDERR stamp() . "  Per-base BEDs:      ${prefix}.cyt.filtered.sort.{GCH,HCG}*.bed\n";
     print STDERR stamp() . "  Methy/cov bedGraph: ${prefix}.cyt.filtered.sort.*.{GCH,HCG}*.bedgraph\n";
